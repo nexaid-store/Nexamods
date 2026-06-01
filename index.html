@@ -2371,8 +2371,8 @@ function checkAdReturn() {
         sessionStorage.removeItem('ad_pending'); 
 
         // JIKA KEMBALI < 10 DETIK (Buru-buru)
-        if (duration < 12) {
-            const sisaWaktuMs = (12 - duration) * 1000;
+        if (duration < 10) {
+            const sisaWaktuMs = (10 - duration) * 1000;
             const finishTime = Date.now() + sisaWaktuMs; 
             
             sessionStorage.setItem('hukuman_berakhir', finishTime);
