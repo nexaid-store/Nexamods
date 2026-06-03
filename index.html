@@ -1385,7 +1385,7 @@ function startSeriesListener() {
     if (db.isDummy) return;
 
     // Ambil 20 data pertama saja saat awal load
-    const q = query(getSeriesCollectionRef(), orderBy("dateAdded", "desc"), limit(30));
+    const q = query(getSeriesCollectionRef(), orderBy("dateAdded", "desc"), limit(4));
     
     // GANTI onSnapshot JADI getDocs DISINI:
     getDocs(q).then((snapshot) => {
@@ -2774,7 +2774,7 @@ function renderListView() {
         ${filteredList.map(s => seriesCardHTML(s)).join('')}
       </div>
 
-      ${(activeCategory === "Semua" && filteredList.length >= 30) ? `
+      ${(activeCategory === "Semua" && filteredList.length >= 4) ? `
       <div class="mt-12 flex justify-center">
           <button id="loadMoreBtn" onclick="loadMoreApk()" class="bg-gray-800/80 hover:bg-gray-700 text-green-400 border border-green-500/20 text-xs font-bold py-3 px-8 rounded-full shadow-lg transition flex items-center gap-2 active:scale-95 backdrop-blur-sm">
               Tampilkan Lebih Banyak
@@ -3365,7 +3365,7 @@ window.loadMoreApk = async function() {
             getSeriesCollectionRef(), // <-- Kunci perbaikannya ada di sini
             firemod.orderBy("dateAdded", "desc"), 
             firemod.startAfter(lastItem.dateAdded), 
-            firemod.limit(30)
+            firemod.limit(4)
         );
 
         const snap = await firemod.getDocs(q);
