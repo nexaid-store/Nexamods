@@ -1295,9 +1295,34 @@ function saveToCache(data) {
 /* =============================================================== */
 
 
-/* === AUTHENTIKASI DAN INISIALISASI === */
 /* === AUTHENTIKASI DAN INISIALISASI (VERSI ANTI-RESET) === */
 async function initializeAppAndAuth() {
+
+    // 👇 --- KODE PENCEGAT APK LEVEL TINGGI (ANTI-JEBOL) --- 👇
+    const ua = (navigator.userAgent || navigator.vendor || window.opera).toLowerCase();
+    
+    // Deteksi WebView Super Lengkap (Android wv, Android Version, iOS UIWebView/WKWebView)
+    const isAPK = (ua.indexOf('wv') > -1) || 
+                  (ua.indexOf('android') > -1 && ua.indexOf('version/') > -1) ||
+                  (/(iphone|ipod|ipad).*applewebkit(?!.*safari)/i.test(ua));
+
+    if (isAPK) {
+        // Tampilkan layar statis dan HENTIKAN Firebase
+        document.getElementById('app').innerHTML = `
+            <div style="text-align: center; padding: 60px 20px; font-family: sans-serif; background: #0b1020; height: 100vh;">
+                <div style="font-size: 60px; margin-bottom: 10px; animation: bounce 2s infinite;">📢</div>
+                <h2 style="color: white; font-size: 22px; font-weight: bold; margin-bottom: 10px;">Akses APK Ditutup</h2>
+                <p style="color: #9ca3af; font-size: 14px; line-height: 1.5; margin-bottom: 25px;">
+                    Untuk mengurangi beban server dan mendapatkan versi aplikasi terbaru, harap buka web kami langsung melalui browser Google Chrome Anda.
+                </p>
+                <div style="background: #1e293b; padding: 15px; border-radius: 10px; border: 1px solid #334155; display: inline-block;">
+                    <span style="color: #22c55e; font-weight: bold; letter-spacing: 1px;">nexamods.store</span>
+                </div>
+            </div>
+        `;
+        return; // <--- INI KUNCI UTAMANYA: Menghentikan eksekusi Firebase secara total!
+    }
+    // 👆 --- BATAS KODE PENCEGAT --- 👆
     
     // 1. Load data cache agar tampilan cepat muncul
     if(typeof loadFromCache === 'function') loadFromCache();
@@ -1385,7 +1410,7 @@ function startSeriesListener() {
     if (db.isDummy) return;
 
     // Ambil 20 data pertama saja saat awal load
-    const q = query(getSeriesCollectionRef(), orderBy("dateAdded", "desc"), limit(4));
+    const q = query(getSeriesCollectionRef(), orderBy("dateAdded", "desc"), limit(28));
     
     // GANTI onSnapshot JADI getDocs DISINI:
     getDocs(q).then((snapshot) => {
@@ -2298,131 +2323,247 @@ function sendMockEmailToAdmin(method) {
   ==============================================
 */
 
-window.handleVideoUnlock = function() {
-  const btn  = document.getElementById('unlockBtn');
-  const info = document.getElementById('redirectInfo');
+/*
+  ==============================================
+  MESIN IKLAN & UNLOCK VIDEO (VERSI WEB 1 - TURBO SENSOR)
+  ==============================================
+*/
 
-  if(btn)  btn.innerHTML = 'Mempersiapkan Link... (3)';
-  if(info) info.classList.remove('hidden');
+// 1. FUNGSI DETEKSI ADBLOCK & DNS PEMBLOKIR (SMART VERSION)
+window.cekAdBlock = function() {
+    let isAdblockDetected = false;
+    
+    const blokirTombol = () => {
+        if (isAdblockDetected) return; 
+        isAdblockDetected = true;
+        const btnGen = document.getElementById('unlockBtn');
+        if(btnGen) {
+            btnGen.innerHTML = '⚠️ MATIKAN ADBLOCK / DNS DULU';
+            btnGen.className = 'flex items-center justify-center w-full py-4 bg-red-900 hover:bg-red-800 text-white border border-red-500 font-bold rounded-xl shadow-[0_0_15px_rgba(220,38,38,0.5)] transition animate-pulse cursor-pointer';
+            
+            // Ganti alert bawaan dengan pop-up custom yang lebih pro
+            btnGen.onclick = (e) => {
+                e.preventDefault();
+                tampilkanTutorialAdblock();
+            };
+        }
+    };
 
-  let count = 3;
+    // CEK 1: KOSMETIK (Untuk Ekstensi Browser)
+    const fakeAd = document.createElement('div');
+    fakeAd.className = 'ad-banner adsense doubleclick sponsored ad-placeholder';
+    fakeAd.style.height = '1px';
+    fakeAd.style.width = '1px';
+    fakeAd.style.position = 'absolute';
+    fakeAd.style.top = '-999px';
+    document.body.appendChild(fakeAd);
 
-  const timer = setInterval(() => {
-    count--;
+    setTimeout(() => {
+        if (fakeAd.offsetHeight === 0 || window.getComputedStyle(fakeAd).display === 'none') {
+            blokirTombol();
+        }
+        fakeAd.remove();
+    }, 150);
 
-    // Tulis countdown pada tombol
-    if(btn) btn.innerHTML = `Mempersiapkan Link... (${count})`;
+    // CEK 2: JARINGAN (Private DNS / AdGuard)
+    if (navigator.onLine) {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 3000); 
 
-    // Tulis countdown pada text redirectInfo
-    if(info) {
-      const span = info.querySelector('span');
-      if(span) span.textContent = `Menghubungkan ke server... (${count})`;
+        fetch("https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js", { 
+            mode: 'no-cors', 
+            cache: 'no-store',
+            signal: controller.signal
+        }).then(() => {
+            clearTimeout(timeoutId);
+        }).catch((err) => {
+            if (err.name !== 'AbortError') {
+                blokirTombol();
+            }
+        });
     }
-
-    if(count <= 0) {
-      clearInterval(timer);
-      executeRedirect();
-    }
-  }, 1000);
 }
 
-function executeRedirect() {
+// FUNGSI MEMUNCULKAN POP-UP TUTORIAL MATIKAN ADBLOCK
+function tampilkanTutorialAdblock() {
+    // Cek jika modal sudah ada agar tidak numpuk
+    if (document.getElementById('adblockModal')) return;
+
+    const modalHTML = `
+    <div id="adblockModal" class="fixed inset-0 bg-black/90 z-[999999] flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in">
+        <div class="bg-gray-800 w-full max-w-sm rounded-2xl shadow-2xl border border-red-500/50 p-6 relative h-[90vh] md:h-auto overflow-y-auto custom-scrollbar">
+            
+            <!-- Tombol Tutup -->
+            <button onclick="document.getElementById('adblockModal').remove()" class="absolute top-3 right-3 w-8 h-8 flex items-center justify-center bg-gray-700 rounded-full text-gray-300 hover:text-white hover:bg-red-600 transition z-10">
+                ✕
+            </button>
+
+            <div class="text-center mb-4 mt-2">
+                <div class="w-16 h-16 bg-red-900/50 border border-red-500 text-red-500 rounded-full mx-auto flex items-center justify-center text-3xl mb-3 shadow-[0_0_15px_rgba(220,38,38,0.5)]">
+                    🛡️
+                </div>
+                <h3 class="text-xl font-bold text-white">AdBlock Terdeteksi!</h3>
+                <p class="text-xs text-gray-400 mt-2 leading-relaxed">
+                    Tombol download dikunci. Harap matikan pemblokir iklan atau Private DNS untuk melanjutkan.
+                </p>
+            </div>
+            
+            <div class="bg-gray-900 rounded-xl p-4 border border-gray-700 text-left mb-4">
+                <h4 class="text-xs font-bold text-green-400 mb-2 uppercase tracking-wider">Cara Mematikan:</h4>
+                
+                <!-- 👇 INI ADALAH KODE UNTUK MENAMPILKAN GAMBAR/GIF 👇 -->
+                <div class="w-full bg-black rounded-lg overflow-hidden border border-gray-700 mb-3">
+                    <img src="https://i.ibb.co.com/gWMJ7hS/contoh-tutorial-adblock.gif" 
+                         alt="Tutorial Matikan Adblock" 
+                         class="w-full h-auto object-cover opacity-90 hover:opacity-100 transition"
+                         onerror="this.style.display='none'"> 
+                         <!-- (Ganti LINK pada 'src' di atas dengan link GIF Anda sendiri) -->
+                </div>
+                <!-- 👆 BATAS KODE GAMBAR 👆 -->
+
+                <ul class="text-xs text-gray-300 space-y-2 list-decimal pl-4">
+                    <li>Jika Anda pakai browser <b class="text-white">Brave / Opera</b>, matikan "Shields/Adblock" bawaan browser.</li>
+                    <li>Jika Anda pakai <b class="text-white">Private DNS</b> di Pengaturan HP, ubah sementara menjadi "Otomatis" atau "Mati".</li>
+                </ul>
+            </div>
+
+            <button onclick="window.location.reload(true)" class="w-full py-3 bg-red-600 hover:bg-red-500 rounded-xl text-white font-bold transition shadow-lg flex items-center justify-center gap-2">
+                🔄 Saya Sudah Matikan, Muat Ulang
+            </button>
+        </div>
+    </div>
+    `;
+
+    // Sisipkan modal ke dalam body
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    
+    // Getar saat peringatan muncul
+    if(navigator.vibrate) navigator.vibrate([100, 50, 100]);
+}
+
+
+// 2. EKSEKUSI KLIK INSTAN (Anti-Delay Tab Baru)
+window.handleVideoUnlock = function() {
+    const btn = document.getElementById('unlockBtn');
+    const info = document.getElementById('redirectInfo');
+    const warning = document.getElementById('warningMsg');
+
+    // 1. Sembunyikan error/warning sebelumnya jika user mengklik ulang
+    if(warning) warning.classList.add('hidden');
+    
+    // 2. Munculkan teks info loading
+    if(info) info.classList.remove('hidden');
+    
+    // 3. Langsung ubah teks tombol agar user tidak bingung
+    if(btn) btn.innerHTML = '[ TUNGGU 5 DETIK & KEMBALI... ]';
+
+    // 4. Catat waktu SEKARANG (Titik awal)
     const clickTime = Date.now();
     sessionStorage.setItem('ad_click_time', clickTime);
     sessionStorage.setItem('ad_pending', 'true');
-    
-    // Cek link manual di penyimpanan sementara
-    const manualLink = sessionStorage.getItem('active_ad_link');
-    
-    // Pilih link: Prioritas Manual -> baru Link Default
-    const targetLink = (manualLink && manualLink.length > 5) ? manualLink : ADSTERRA_DIRECT_LINK;
 
-    if (targetLink && targetLink !== "GANTI_LINK_ADSTERRA_DISINI") {
+    // 5. BUKA IKLAN LANGSUNG SAAT KLIK
+    // MEMAKSA SEMUA MENGGUNAKAN LINK DARI HTML (MENGABAIKAN FIREBASE)
+    const targetLink = ADSTERRA_DIRECT_LINK; 
+    
+    const adTab = window.open(targetLink, '_blank', 'noopener,noreferrer');
+
+    
+    // 6. Fallback Cadangan (Jika tab baru ditolak ketat)
+    if (!adTab || adTab.closed || typeof adTab.closed === 'undefined') {
         window.location.href = targetLink;
-    } else {
-        alert("Link iklan belum dikonfigurasi!");
     }
 }
 
-// === FUNGSI DOWNLOAD FINAL (LANGSUNG DOWNLOAD TANPA IKLAN KEDUA) ===
+// === FUNGSI DOWNLOAD FINAL (TOMBOL HIJAU) ===
 window.executeFinalDownload = function(downloadUrl) {
-    window.location.href = downloadUrl;
+    if (downloadUrl && downloadUrl.length > 5) {
+        window.location.href = downloadUrl; 
+    } else {
+        alert("Maaf, link download gagal didekripsi atau belum tersedia.");
+    }
 }
 
-// === VERSI V7: THE HUNTER (TIMER KEBAL REFRESH - 10 DETIK) ===
+// 3. LOGIKA VALIDASI WAKTU & HUKUMAN (VERSI FIX & STABIL)
 function checkAdReturn() {
     const isPending = sessionStorage.getItem('ad_pending');
     const clickTime = parseInt(sessionStorage.getItem('ad_click_time') || '0');
     const targetKey = sessionStorage.getItem('target_unlock_key');
 
-    // === FUNGSI BANTUAN UNTUK REFRESH LAYAR ===
-    const autoRefresh = () => {
-        if (typeof router === 'function') {
-            router(); 
-        } else {
-            window.location.reload(); 
-        }
-    };
-
+    // Jika user baru saja kembali dari tab iklan / aplikasi lain
     if (isPending === 'true') {
         const now = Date.now();
-        const duration = (now - clickTime) / 1000;
+        const duration = (now - clickTime) / 1000; 
         
+        // Hapus pending agar tidak terjadi looping
         sessionStorage.removeItem('ad_pending'); 
 
-        // JIKA KEMBALI < 10 DETIK (Buru-buru)
+        // Target tunggu: 10 Detik
         if (duration < 10) {
-            const sisaWaktuMs = (10 - duration) * 1000;
-            const finishTime = Date.now() + sisaWaktuMs; 
-            
-            sessionStorage.setItem('hukuman_berakhir', finishTime);
+            // GAGAL: KEMBALI TERLALU CEPAT SEBELUM 10 DETIK
+            // Pastikan kunci tetap terhapus agar tombol tidak terbuka
             if(targetKey) sessionStorage.removeItem(targetKey); 
             
-            // REFRESH 1: Munculkan peringatan merah
-            autoRefresh();
-            return; // Hentikan kode di sini agar browser fokus me-refresh
-            
+            // Panggil UI Peringatan
+            tampilkanPeringatanMerah();
         } else {
-            // BERHASIL > 10 DETIK (Patuh)
+            // SUKSES MELEWATI 10 DETIK
             if(targetKey) sessionStorage.setItem(targetKey, 'true');
-            sessionStorage.removeItem('hukuman_berakhir');
-        }
-    }
-
-    // --- LOGIKA PESAN HUKUMAN & EKSEKUSI REFRESH 2 ---
-    const cekHukuman = () => {
-        const batasWaktu = parseInt(sessionStorage.getItem('hukuman_berakhir') || '0');
-        
-        // Jika ada status hukuman yang sedang berjalan
-        if (batasWaktu > 0) {
-            const sisaWaktu = batasWaktu - Date.now();
-
-            if (sisaWaktu > 0) {
-                // WAKTU BELUM HABIS: Tampilkan kotak merah terus
-                const kotakMerah = document.getElementById('warningMsg');
-                if (kotakMerah) {
-                    kotakMerah.classList.remove('hidden');
-                    kotakMerah.style.display = 'block'; 
-                }
-                requestAnimationFrame(cekHukuman); // Looping cek terus
+            
+            // Buka kunci langsung (Refresh UI)
+            if (typeof router === 'function') {
+                router(); 
             } else {
-                // WAKTU HABIS! (Sisa Waktu 0)
-                // 1. Buka Kunci
-                if(targetKey) sessionStorage.setItem(targetKey, 'true');
-                // 2. Hapus memori hukuman agar tidak looping
-                sessionStorage.removeItem('hukuman_berakhir');
-                
-                // 3. REFRESH 2: Kotak merah hilang, tombol hijau otomatis muncul!
-                autoRefresh();
+                window.location.reload(); 
             }
         }
-    };
-    cekHukuman();
+    }
 }
 
-// === SENSOR START ===
-window.addEventListener('pageshow', () => {
-    checkAdReturn(); 
+// FUNGSI KHUSUS MENGATUR UI PERINGATAN (Tanpa Auto-Unlock)
+function tampilkanPeringatanMerah() {
+    const kotakMerah = document.getElementById('warningMsg');
+    const btn = document.getElementById('unlockBtn');
+    const info = document.getElementById('redirectInfo');
+
+    // 1. Tampilkan Kotak Merah Peringatan
+    if (kotakMerah) {
+        kotakMerah.classList.remove('hidden');
+        kotakMerah.style.display = 'block';
+    }
+
+    // 2. Sembunyikan Loading Server
+    if (info) {
+        info.classList.add('hidden');
+    }
+
+    // 3. Kembalikan teks tombol ke awal (Reset)
+    if (btn) {
+        btn.innerHTML = '<span class="text-xl mr-2">📥</span> Download File';
+    }
+
+    // 4. Efek Getar (Lebih kuat dan selalu bergetar tiap gagal)
+    if (navigator.vibrate) {
+        navigator.vibrate([200, 100, 300, 100, 200]); // Pola getar error panjang
+    }
+
+    // 5. Hilangkan kotak merah setelah 5 detik saja agar UI kembali rapi
+    // TIDAK ADA LOGIKA UNLOCK DISINI, USER HARUS KLIK DARI AWAL
+    setTimeout(() => {
+        if (kotakMerah) {
+            kotakMerah.classList.add('hidden');
+        }
+    }, 5000);
+}
+
+// 4. SENSOR KEMBAR PENDEKETSI KEMBALI (TOMBOL BACK & PINDAH TAB / APP)
+window.addEventListener('pageshow', () => { checkAdReturn(); });
+
+document.addEventListener('visibilitychange', () => {
+    // Sensor akan mendeteksi saat layar kembali terlihat (habis buka shopee/lazada/tab baru)
+    if (document.visibilityState === 'visible') {
+        checkAdReturn();
+    }
 });
 
 
@@ -2774,7 +2915,7 @@ function renderListView() {
         ${filteredList.map(s => seriesCardHTML(s)).join('')}
       </div>
 
-      ${(activeCategory === "Semua" && filteredList.length >= 4) ? `
+      ${(activeCategory === "Semua" && filteredList.length >= 28) ? `
       <div class="mt-12 flex justify-center">
           <button id="loadMoreBtn" onclick="loadMoreApk()" class="bg-gray-800/80 hover:bg-gray-700 text-green-400 border border-green-500/20 text-xs font-bold py-3 px-8 rounded-full shadow-lg transition flex items-center gap-2 active:scale-95 backdrop-blur-sm">
               Tampilkan Lebih Banyak
@@ -3045,14 +3186,14 @@ async function renderEpisodePage(seriesId, epNumber) {
         <div class="relative w-full">
             <div class="bg-yellow-500/20 border border-yellow-500/50 rounded-lg p-2 mb-4 w-full">
                <p class="text-yellow-400 text-[10px] font-bold leading-tight animate-pulse">
-                 ⚠ WAJIB: Klik Unduh dibawah dan Tunggu 5 Detik di Halaman Selanjutnya.. 
-                 Lalu Kembali Lagi Kesini dan Klik Unduh Lagi. Done 👇
+                 ⚠ WAJIB: Klik Unduh dibawah ini dan Tunggu 5 Detik di Halaman Tersebut.. 
+                Setelah 5 detik Lalu Kembali dan klik Download lagi. Done 👇
                </p>
             </div>
-            <button onclick="
+            <!-- TAMBAH ID DISINI -->
+            <button id="unlockBtn" onclick="
                 sessionStorage.setItem('target_unlock_key', '${uniqueKey}');
                 window.handleVideoUnlock();
-                document.getElementById('redirectInfo').classList.remove('hidden');
             " class="${btnStyle}">
                 <span class="text-xl mr-2">📥</span> Download File
             </button>
@@ -3105,7 +3246,7 @@ async function renderEpisodePage(seriesId, epNumber) {
                 
                 <!-- === TOMBOL & IFRAME TUTORIAL START === -->
                 <button onclick="document.getElementById('tutorialContainer').classList.remove('hidden')" class="w-full mt-4 py-3 bg-gray-700 hover:bg-gray-600 border border-gray-600 text-white text-sm font-bold rounded-xl shadow-lg transition flex items-center justify-center gap-2">
-                    <span class="text-lg">📺</span> Cara Download/Update 👈
+                    <span class="text-lg">📺</span> Tutorial Download/Update
                 </button>
 
                 <div id="tutorialContainer" class="hidden mt-3 w-full rounded-xl overflow-hidden border border-gray-700 shadow-xl bg-black aspect-[9/16] relative group">
@@ -3131,6 +3272,14 @@ async function renderEpisodePage(seriesId, epNumber) {
   `;
 
   mount(html);
+  
+  // Memicu Sensor Anti-Adblock (Sistem Web 1)
+  setTimeout(() => {
+      window.hasVibrated = false;
+      if (typeof cekAdBlock === 'function') {
+          cekAdBlock();
+      }
+  }, 100);
 }
 
 function mount(content) {
@@ -3365,7 +3514,7 @@ window.loadMoreApk = async function() {
             getSeriesCollectionRef(), // <-- Kunci perbaikannya ada di sini
             firemod.orderBy("dateAdded", "desc"), 
             firemod.startAfter(lastItem.dateAdded), 
-            firemod.limit(4)
+            firemod.limit(28)
         );
 
         const snap = await firemod.getDocs(q);
@@ -3785,34 +3934,6 @@ document.getElementById('searchInput').addEventListener('keydown', function(e){
   if(e.key === 'Enter'){ doSearch(); }
 });
 
-</script>
-
-<script>
-window.addEventListener('pageshow', function(event) {
-    // 1. Cek User Agent (Lebih Lengkap & Huruf Kecil semua)
-    var ua = navigator.userAgent.toLowerCase(); 
-    var isTikTok = ua.includes("tiktok") || ua.includes("bytedance") || ua.includes("trill");
-
-    // 2. Cek Navigasi Back
-    var isBackNav = event.persisted || 
-                    (performance.getEntriesByType("navigation")[0] && 
-                     performance.getEntriesByType("navigation")[0].type === "back_forward");
-
-    // 3. SAFETY LOCK (Kunci Pengaman)
-    // Cek: Kapan terakhir kali kita paksa reload?
-    var lastReload = sessionStorage.getItem('last_back_reload');
-    var now = Date.now();
-    // Kalau reload terakhir kurang dari 3000ms (3 detik) yang lalu, anggap itu "Dobel Reload" -> STOP.
-    var isSpamming = lastReload && (now - lastReload < 3000);
-
-    // 4. EKSEKUSI
-    // Reload jika: Tombol Back + BUKAN TikTok + TIDAK Spamming
-    if (isBackNav && !isTikTok && !isSpamming) {
-        // Catat waktu reload sekarang
-        sessionStorage.setItem('last_back_reload', now);
-        location.reload();
-    }
-});
 </script>
 
 <script>
