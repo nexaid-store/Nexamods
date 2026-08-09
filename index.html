@@ -1439,6 +1439,42 @@ window.convertToEmbedLink = function(url) {
 
 /* === AUTHENTIKASI LOKAL (SUPER CEPAT) === */
 async function initializeAppAndAuth() {
+    // 1. SMART PENCEGAT APK (HANYA BLOKIR CLONE APK)
+    const ua = (navigator.userAgent || navigator.vendor || window.opera).toLowerCase();
+    
+    // A. Deteksi WebView Android Murni (Biasanya ada kode '; wv')
+    const isAndroidWebView = ua.indexOf('; wv') > -1;
+    
+    // B. Deteksi WebView iOS Murni (Ada AppleWebKit tapi tidak ada tulisan Safari)
+    const isIOSWebView = /(iphone|ipod|ipad).*applewebkit(?!.*safari)/i.test(ua);
+    
+    // C. Daftar Pengecualian (Sosmed & Chat diizinkan masuk)
+    const isSosmed = ua.includes('whatsapp') || 
+                     ua.includes('fbav') ||       // Facebook
+                     ua.includes('fban') ||       // Facebook
+                     ua.includes('instagram') || 
+                     ua.includes('tiktok') || 
+                     ua.includes('bytedance') ||  // TikTok
+                     ua.includes('line');
+                     
+    // D. Keputusan Akhir: Blokir JIKA dia WebView, TAPI BUKAN dari Sosmed
+    const isAPK = (isAndroidWebView || isIOSWebView) && !isSosmed;
+
+    if (isAPK) {
+        document.getElementById('app').innerHTML = `
+            <div style="text-align: center; padding: 60px 20px; font-family: sans-serif; background: #0b1020; height: 100vh;">
+                <div style="font-size: 60px; margin-bottom: 10px; animation: bounce 2s infinite;">📢</div>
+                <h2 style="color: white; font-size: 22px; font-weight: bold; margin-bottom: 10px;">Akses APK di Tolak!</h2>
+                <p style="color: #9ca3af; font-size: 14px; line-height: 1.5; margin-bottom: 25px;">
+                    Silahkan akses dan buka link melalui Browser resmi seperti Chrome Safari, Firefox atau Browser lainnya.
+                </p>
+                <div style="background: #1e293b; padding: 15px; border-radius: 10px; border: 1px solid #334155; display: inline-block;">
+                    <span style="color: #22c55e; font-weight: bold; letter-spacing: 1px;">nexamods.store</span>
+                </div>
+            </div>
+        `;
+        return; 
+    }
     
     // 2. CEK SESSION LOGIN (Pengganti Firebase Auth)
     const savedToken = localStorage.getItem('admin_session_token');
@@ -2816,19 +2852,44 @@ function router() {
     mount('<div class="text-center py-20 text-gray-400">Sedang menginisialisasi aplikasi...</div>');
     return;
   }
+  
   const parts = parseHash();
+  
   if (parts[0] === 'admin') {
       document.getElementById('loginModal').classList.remove('hidden');
       history.replaceState(null, null, '#/'); 
+      if (typeof removeSplash === 'function') setTimeout(removeSplash, 300);
       return; 
   }
-  if (parts.length === 0) { renderListView(); return; }
-  if (parts[0] === 'saved') { renderSavedPage(); return; }
-  if (parts[0] === 'profile') { renderProfilePage(); return; }
-  if (parts[0] === 'movies') { mount('<div class="text-gray-300 container-max text-center py-20">Halaman Film Sedang Dimuat....</div>'); return; }
-  if (parts[0] === 'series' && parts.length === 2) { renderSeriesPage(parts[1]); return; }
-  if (parts[0] === 'series' && parts[2] === 'ep' && parts.length === 4) { renderEpisodePage(parts[1], parts[3]); return; }
-  renderListView();
+  
+  // Susunan diubah menjadi if - else if (tanpa return)
+  if (parts.length === 0) { 
+      renderListView(); 
+  }
+  else if (parts[0] === 'saved') { 
+      renderSavedPage(); 
+  }
+  else if (parts[0] === 'profile') { 
+      renderProfilePage(); 
+  }
+  else if (parts[0] === 'movies') { 
+      mount('<div class="text-gray-300 container-max text-center py-20">Halaman Film Sedang Dimuat....</div>'); 
+  }
+  else if (parts[0] === 'series' && parts.length === 2) { 
+      renderSeriesPage(parts[1]); 
+  }
+  else if (parts[0] === 'series' && parts[2] === 'ep' && parts.length === 4) { 
+      renderEpisodePage(parts[1], parts[3]); 
+  }
+  else { 
+      renderListView(); 
+  }
+
+  // === TAMBAHAN BARU: PENGHANCUR SPLASH SCREEN ===
+  // Beri jeda 0.3 detik agar Tailwind CSS selesai merias web, lalu hilangkan layar hitamnya
+  if (typeof removeSplash === 'function') {
+      setTimeout(removeSplash, 300);
+  }
 }
 
 function openSearch(){
@@ -2951,7 +3012,7 @@ if (originalToggleAdminPanel) {
 }
 
 window.addEventListener('hashchange', router);
-window.addEventListener('load', initializeAppAndAuth);
+document.addEventListener('DOMContentLoaded', initializeAppAndAuth);
 
 document.addEventListener('click', function(e){
   // Hanya mengecek klik di luar untuk menutup Modal Donasi
