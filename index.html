@@ -1439,27 +1439,6 @@ window.convertToEmbedLink = function(url) {
 
 /* === AUTHENTIKASI LOKAL (SUPER CEPAT) === */
 async function initializeAppAndAuth() {
-    // 1. PENCEGAT APK
-    const ua = (navigator.userAgent || navigator.vendor || window.opera).toLowerCase();
-    const isAPK = (ua.indexOf('wv') > -1) || 
-                  (ua.indexOf('android') > -1 && ua.indexOf('version/') > -1) ||
-                  (/(iphone|ipod|ipad).*applewebkit(?!.*safari)/i.test(ua));
-
-    if (isAPK) {
-        document.getElementById('app').innerHTML = `
-            <div style="text-align: center; padding: 60px 20px; font-family: sans-serif; background: #0b1020; height: 100vh;">
-                <div style="font-size: 60px; margin-bottom: 10px; animation: bounce 2s infinite;">📢</div>
-                <h2 style="color: white; font-size: 22px; font-weight: bold; margin-bottom: 10px;">Akses APK Ditutup</h2>
-                <p style="color: #9ca3af; font-size: 14px; line-height: 1.5; margin-bottom: 25px;">
-                    Silahkan akses melalui web resmi kami langsung di browser.
-                </p>
-                <div style="background: #1e293b; padding: 15px; border-radius: 10px; border: 1px solid #334155; display: inline-block;">
-                    <span style="color: #22c55e; font-weight: bold; letter-spacing: 1px;">nexamods.store</span>
-                </div>
-            </div>
-        `;
-        return; 
-    }
     
     // 2. CEK SESSION LOGIN (Pengganti Firebase Auth)
     const savedToken = localStorage.getItem('admin_session_token');
