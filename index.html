@@ -2448,7 +2448,7 @@ function renderProfilePage() {
         </div>
         <div class="mx-4 space-y-3">
             <h3 class="font-bold text-gray-500 mb-2 text-[10px] uppercase tracking-wider pl-1">Pusat Bantuan</h3>
-            <a href="https://wa.me/6282268002892?text=Halo+Admin,+saya+mau+lapor+atau..." target="_blank" class="flex items-center justify-between p-3 bg-gray-800/60 rounded-xl hover:bg-gray-700 transition border border-gray-700/50 group">
+            <a href="https://wa.me/6285379998007?text=Halo+Admin,+saya+mau+lapor+atau..." target="_blank" class="flex items-center justify-between p-3 bg-gray-800/60 rounded-xl hover:bg-gray-700 transition border border-gray-700/50 group">
                 <div class="flex items-center gap-3">
                     <span class="bg-blue-500/10 text-blue-400 p-2 rounded-lg text-sm group-hover:scale-110 transition">💬</span>
                     <div>
@@ -2673,7 +2673,7 @@ function seriesCardHTML(s) {
 
 async function renderSeriesPage(id) {
   let s = seriesList.find(x => x.id === id);
-  if (!s) return mount('<div class="text-red-400 container-max text-center py-20 mt-10">Aplikasi tidak ditemukan.</div>');
+  if (!s) return mount('<div class="text-red-400 container-max text-center py-20 mt-10">Memuat...</div>');
 
   document.title = `${s.title} — Download`;
   let deskripsiRapi = (s.description || "").replace(/●/g, '<br>• ').replace(/\. /g, '.<br><br>').replace(/\n/g, '<br>');
@@ -2750,7 +2750,7 @@ window.toggleCustomFullscreen = function(containerId, btn) {
 
 async function renderEpisodePage(seriesId, epNumber) {
   let s = seriesList.find(x => x.id === seriesId);
-  if (!s) return mount('<div class="text-red-400 container-max text-center py-20 mt-10">Aplikasi tidak ditemukan.</div>');
+  if (!s) return mount('<div class="text-red-400 container-max text-center py-20 mt-10">Memuat...</div>');
 
   if (s && s.adLink) sessionStorage.setItem('active_ad_link', s.adLink);
   else sessionStorage.removeItem('active_ad_link');
@@ -2831,7 +2831,7 @@ async function renderEpisodePage(seriesId, epNumber) {
                     </div>
                     <iframe src="https://drive.google.com/file/d/1uev2isu4ANTODeJvY-Yz6eq62ClasNTs/preview" width="100%" height="100%" frameborder="0" allow="autoplay; fullscreen" class="absolute top-0 left-0 w-full h-full"></iframe>
                 </div>
-                <button onclick="window.open('https://wa.me/6282268002892?text=Halo+Admin,+saya+mengalami+kendala+saat+mendownload+aplikasi+${s.title}.+Mohon+bantuannya!', '_blank')" class="text-gray-500 text-xs hover:text-green-400 transition py-4 mt-2 w-full flex items-center justify-center gap-1.5">
+                <button onclick="window.open('https://wa.me/6285379998007?text=Halo+Admin,+saya+mengalami+kendala+saat+mendownload+aplikasi+${s.title}.+Mohon+bantuannya!', '_blank')" class="text-gray-500 text-xs hover:text-green-400 transition py-4 mt-2 w-full flex items-center justify-center gap-1.5">
                     Lapor Admin
                 </button>
             </div>
