@@ -2206,6 +2206,7 @@ window.cekAdBlock = function() {
         }
     };
 
+    // DOM Injection (Umpan Palsu)
     const fakeAd = document.createElement('div');
     fakeAd.className = 'ad-banner adsense doubleclick sponsored ad-placeholder';
     fakeAd.style.height = '1px';
@@ -2214,27 +2215,13 @@ window.cekAdBlock = function() {
     fakeAd.style.top = '-999px';
     document.body.appendChild(fakeAd);
 
+    // Waktu tunggu dinaikkan jadi 300ms agar lebih akurat dan anti false-positive
     setTimeout(() => {
         if (fakeAd.offsetHeight === 0 || window.getComputedStyle(fakeAd).display === 'none') {
             blokirTombol();
         }
         fakeAd.remove();
-    }, 150);
-
-    if (navigator.onLine) {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 3000); 
-
-        fetch("https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js", { 
-            mode: 'no-cors', 
-            cache: 'no-store',
-            signal: controller.signal
-        }).then(() => {
-            clearTimeout(timeoutId);
-        }).catch((err) => {
-            if (err.name !== 'AbortError') blokirTombol();
-        });
-    }
+    }, 300);
 }
 
 function tampilkanTutorialAdblock() {
@@ -2265,7 +2252,10 @@ function tampilkanTutorialAdblock() {
     if(navigator.vibrate) navigator.vibrate([100, 50, 100]);
 }
 
-window.handleVideoUnlock = function() {
+window.handleVideoUnlock = function(streamLink) {
+    // TAMBAHAN BARU: Simpan link rahasia sementara agar bisa langsung dipakai tanpa loading
+    if (streamLink) sessionStorage.setItem('temp_stream_link', streamLink);
+    
     const btn = document.getElementById('unlockBtn');
     const info = document.getElementById('redirectInfo');
     const warning = document.getElementById('warningMsg');
@@ -2298,6 +2288,7 @@ function checkAdReturn() {
     const isPending = sessionStorage.getItem('ad_pending');
     const clickTime = parseInt(sessionStorage.getItem('ad_click_time') || '0');
     const targetKey = sessionStorage.getItem('target_unlock_key');
+    const finalLink = sessionStorage.getItem('temp_stream_link'); // BARU: Mengambil link dari memori
 
     if (isPending === 'true') {
         const now = Date.now();
@@ -2306,14 +2297,37 @@ function checkAdReturn() {
         sessionStorage.removeItem('ad_pending'); 
 
         if (duration < 7) {
+            // JIKA GAGAL / CURANG
             if(targetKey) sessionStorage.removeItem(targetKey); 
             tampilkanPeringatanMerah();
         } else {
+            // JIKA BERHASIL MENGGU
             if(targetKey) sessionStorage.setItem(targetKey, 'true');
-            if (typeof router === 'function') {
-                router(); 
+            
+            const btn = document.getElementById('unlockBtn');
+            const info = document.getElementById('redirectInfo');
+
+            if (btn && finalLink) {
+                // 1. Sembunyikan teks loading "Menghubungkan ke server..."
+                if (info) info.classList.add('hidden');
+
+                // 2. Ganti tombol lama jadi tombol baru secara INSTAN (0 detik)
+                btn.outerHTML = `
+                    <button onclick="executeFinalDownload('${finalLink}')" class="flex items-center justify-center w-full py-4 bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 text-white font-bold rounded-xl shadow-lg transition transform hover:scale-[1.02] animate-pulse">
+                        <span class="text-xl mr-2">📥</span> Download File (New)
+                    </button>
+                    <p class="text-xs text-green-400 text-center mt-2">⏫ Silahkan Download APK</p>
+                `;
+                
+                // Getar halus tanda berhasil
+                if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
             } else {
-                window.location.reload(); 
+                // Fallback (Jaga-jaga jika tombol tidak terbaca)
+                if (typeof router === 'function') {
+                    router(); 
+                } else {
+                    window.location.reload(); 
+                }
             }
         }
     }
@@ -2778,7 +2792,7 @@ async function renderEpisodePage(seriesId, epNumber) {
             Setelah 5 detik Lalu Kembali dan klik Download lagi. Done 👇
            </p>
         </div>
-        <button id="unlockBtn" onclick="sessionStorage.setItem('target_unlock_key', '${uniqueKey}'); window.handleVideoUnlock();" class="${btnStyle}">
+        <button id="unlockBtn" onclick="sessionStorage.setItem('target_unlock_key', '${uniqueKey}'); window.handleVideoUnlock('${realStreamLink}');" class="${btnStyle}">
             <span class="text-xl mr-2">📥</span> Download File
         </button>
         <div id="warningMsg" class="hidden mt-3 bg-red-600/90 text-white px-4 py-3 rounded-lg text-xs font-semibold text-center shadow-xl border border-red-400 shake-anim">
