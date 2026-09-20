@@ -1225,7 +1225,7 @@ if (displayEl) displayEl.textContent = "Menghubungkan...";
    >>> TURBO CACHING SYSTEM (NEW FEATURE) <<<
    Menyimpan data di HP user agar loading kedua INSTAN
 =============================================================== */
-const CACHE_KEY = 'visual_film_turbo_data_v4';
+const CACHE_KEY = 'visual_film_turbo_data_v5';
 
 function loadFromCache() {
     const cachedData = localStorage.getItem(CACHE_KEY);
@@ -2982,11 +2982,15 @@ async function handleUploadPoster(inputElement, targetInputId) {
         
         const fd = new FormData();
         fd.append("file", finalPayload);
-        fd.append("upload_preset", atob("bWxfZGVmYXVsdA==")); 
-        fd.append("folder", "poster_film_keamanan");
-            
+        
+        // Preset: nexamods_poster
+        fd.append("upload_preset", atob("bmV4YW1vZHNfcG9zdGVy")); 
+        
         showCustomAlert("Mengupload ke Cloudinary...");
-        const _0xc1 = atob("ZGE3bm91dHd6"); 
+        
+        // Cloud Name yang BENAR: pwmrdewu
+        const _0xc1 = atob("cHdtcmRld3U="); 
+        
         const response = await fetch(`https://api.cloudinary.com/v1_1/${_0xc1}/image/upload`, { method: "POST", body: fd });
         const result = await response.json();
         
