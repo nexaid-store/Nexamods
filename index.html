@@ -2253,7 +2253,7 @@ function tampilkanTutorialAdblock() {
 }
 
 window.handleVideoUnlock = function(streamLink) {
-    // TAMBAHAN BARU: Simpan link rahasia sementara agar bisa langsung dipakai tanpa loading
+    // Menyimpan link rahasia sementara agar bisa langsung dipakai
     if (streamLink) sessionStorage.setItem('temp_stream_link', streamLink);
     
     const btn = document.getElementById('unlockBtn');
@@ -2262,18 +2262,36 @@ window.handleVideoUnlock = function(streamLink) {
 
     if(warning) warning.classList.add('hidden');
     if(info) info.classList.remove('hidden');
-    if(btn) btn.innerHTML = '[ TUNGGU 5 DETIK & KEMBALI... ]';
+    
+    // [UPDATE]: Kunci tombol agar tidak bisa di-spam klik
+    if(btn) {
+        btn.innerHTML = '⏳ MEMBUKA TAB SPONSOR DAN TUNGGU 5 DETIK...';
+        btn.style.pointerEvents = 'none'; 
+        btn.classList.replace('from-green-600', 'from-gray-600');
+        btn.classList.replace('to-green-500', 'to-gray-500');
+    }
 
     const clickTime = Date.now();
     sessionStorage.setItem('ad_click_time', clickTime);
     sessionStorage.setItem('ad_pending', 'true');
 
     const targetLink = ADSTERRA_DIRECT_LINK; 
-    const adTab = window.open(targetLink, '_blank', 'noopener,noreferrer');
     
-    if (!adTab || adTab.closed || typeof adTab.closed === 'undefined') {
-        window.location.href = targetLink;
-    }
+    // [UPDATE]: Teknik Anchor Click (Bypass Pop-up Blocker & Cegah SPA Reload)
+    const a = document.createElement('a');
+    a.href = targetLink;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+
+    // Kembalikan status teks tombol
+    setTimeout(() => {
+        if(btn) {
+            btn.innerHTML = '[ TUNGGU 5 DETIK & KEMBALI... ]';
+        }
+    }, 1000);
 }
 
 window.executeFinalDownload = function(downloadUrl) {
@@ -2294,18 +2312,29 @@ function checkAdReturn(isInitialLoad = false) {
         const now = Date.now();
         const duration = (now - clickTime) / 1000; 
         
+        // [UPDATE]: Filter pelindung agar tidak false-trigger di bawah 1 detik
+        if (duration < 1 && !isInitialLoad) return; 
+
         sessionStorage.removeItem('ad_pending'); 
 
         if (duration < 4) {
             // JIKA GAGAL (KEMBALI TERLALU CEPAT)
             if(targetKey) sessionStorage.removeItem(targetKey); 
+            
+            // Buka kembali kunci tombol agar user bisa mencoba lagi
+            const btn = document.getElementById('unlockBtn');
+            if(btn) {
+                btn.style.pointerEvents = 'auto';
+                btn.classList.replace('from-gray-600', 'from-green-600');
+                btn.classList.replace('to-gray-500', 'to-green-500');
+            }
             if (!isInitialLoad) tampilkanPeringatanMerah();
+            
         } else {
             // JIKA BERHASIL MENUNGGU
             if(targetKey) sessionStorage.setItem(targetKey, 'true');
             
-            // MENCEGAH BUG RELOAD: Jika halaman ter-refresh, biarkan sistem me-render tombol final tanpa delay.
-            if (isInitialLoad) return;
+            if (isInitialLoad) return; 
             
             const btn = document.getElementById('unlockBtn');
             const info = document.getElementById('redirectInfo');
