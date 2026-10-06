@@ -2317,7 +2317,7 @@ function checkAdReturn(isInitialLoad = false) {
 
         sessionStorage.removeItem('ad_pending'); 
 
-        if (duration < 4) {
+        if (duration < 6) {
             // JIKA GAGAL (KEMBALI TERLALU CEPAT)
             if(targetKey) sessionStorage.removeItem(targetKey); 
             
