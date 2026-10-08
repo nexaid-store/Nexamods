@@ -1225,7 +1225,8 @@ if (displayEl) displayEl.textContent = "Menghubungkan...";
    >>> TURBO CACHING SYSTEM (NEW FEATURE) <<<
    Menyimpan data di HP user agar loading kedua INSTAN
 =============================================================== */
-const CACHE_KEY = 'visual_film_turbo_data_v6';
+// [UPDATE]: Naikkan versi cache key ke v7 agar seluruh data lama di HP pengunjung terhapus paksa.
+const CACHE_KEY = 'visual_film_turbo_data_v7';
 
 function loadFromCache() {
     const cachedData = localStorage.getItem(CACHE_KEY);
@@ -1235,8 +1236,8 @@ function loadFromCache() {
             if(Array.isArray(parsed) && parsed.length > 0) {
                 console.log("⚡ TURBO: Memuat data dari Cache (Instan)");
                 seriesList = parsed;
-                isAuthReady = true; // Anggap auth ready sementara agar UI muncul
-                router(); // Render langsung tanpa tunggu internet
+                isAuthReady = true; 
+                router(); 
             }
         } catch(e) {
             console.error("Cache error", e);
