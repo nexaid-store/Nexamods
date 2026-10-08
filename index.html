@@ -2821,7 +2821,7 @@ async function renderEpisodePage(seriesId, epNumber) {
 
   const epNum = parseInt(epNumber,10);
   const ep = s.episodes.find(e => e.number === epNum);
-  if (!ep) return mount('<div class="text-red-400 container-max text-center py-20">Versi ini tidak tersedia.</div>');
+  if (!ep) return mount('<div class="text-red-400 container-max text-center py-20">Memuat File APK...</div>');
 
   document.title = `Download ${s.title} - ${ep.title}`;
   const realStreamLink = safeDecode(ep.link_stream);
